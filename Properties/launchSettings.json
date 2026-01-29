@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SuiQemu (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "SuiQemu (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
