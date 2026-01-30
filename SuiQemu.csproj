@@ -19,7 +19,7 @@
     <MSBuildWarningsAsMessages>IDE0130</MSBuildWarningsAsMessages>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="Assets\" />
+    <Content Include="Assets" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
   <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">

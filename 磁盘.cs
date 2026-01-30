@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 namespace SuiQemu;
+
 public partial class 磁盘 : StackPanel
 {
     public static 磁盘 实例 { get; } = new();
@@ -48,7 +48,8 @@ public partial class 磁盘 : StackPanel
     }
     private void 绑定事件()
     {
-        _c模式.SelectionChanged += async (s, e) => {
+        _c模式.SelectionChanged += async (s, e) =>
+        {
             配置.模式 = _c模式.SelectedIndex;
             _t路径.Visibility = 配置.模式 < 2 ? Visibility.Visible : Visibility.Collapsed;
             _b浏览.Visibility = 配置.模式 < 2 ? Visibility.Visible : Visibility.Collapsed;
@@ -61,7 +62,8 @@ public partial class 磁盘 : StackPanel
         _c格式.SelectionChanged += (s, e) => 配置.格式 = _c格式.SelectedValue?.ToString() ?? "qcow2";
         _c分配.SelectionChanged += (s, e) => 配置.分配 = _c分配.SelectedValue?.ToString() ?? "off";
         _c接口.SelectionChanged += (s, e) => 配置.接口 = _c接口.SelectedValue?.ToString() ?? "Virtio";
-        _c磁盘.SelectionChanged += (s, e) => {
+        _c磁盘.SelectionChanged += (s, e) =>
+        {
             if (_c磁盘.SelectedItem is string v)
             {
                 var path = "\\\\.\\PhysicalDrive" + v.Split('|')[0];
@@ -70,7 +72,8 @@ public partial class 磁盘 : StackPanel
             }
         };
         _b创建.Click += async (s, e) => await 创建磁盘();
-        _b浏览.Click += async (s, e) => {
+        _b浏览.Click += async (s, e) =>
+        {
             var picker = new FileOpenPicker();
             if (窗口句柄 != IntPtr.Zero) WinRT.Interop.InitializeWithWindow.Initialize(picker, 窗口句柄);
             picker.FileTypeFilter.Add("*");
@@ -81,7 +84,8 @@ public partial class 磁盘 : StackPanel
     public async Task 加载磁盘()
     {
         _p1.Visibility = Visibility.Visible;
-        var list = await Task.Run(() => {
+        var list = await Task.Run(() =>
+        {
             var res = new List<string>();
             try
             {

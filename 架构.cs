@@ -1,12 +1,12 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 namespace SuiQemu;
+
 public class 内存参数
 {
     public int 容量 = 2048, 插槽 = 0, 最大容量 = 4096, 节点 = 1;
@@ -21,10 +21,7 @@ public class 磁盘参数
     public string 分配 = "off";
     public string 接口 = "Virtio";
 }
-public class 网络参数
-{
-    public string 设备 = "e1000";
-}
+public class 网络参数 { public string 设备 = ""; }
 public class 仿真配置
 {
     public 内存参数 内存 = new();
@@ -66,7 +63,7 @@ public partial class 架构 : Grid
     }
     public string 拼命令(仿真配置 p)
     {
-        if (string.IsNullOrEmpty(数据.路径) || string.IsNullOrEmpty(数据.选架构)) return "";
+        if (数据.路径 == null || 数据.选架构 == null) return "";
         var m = p.内存; var d = p.磁盘; var n = p.网络;
         var exe = Path.Combine(数据.路径, $"qemu-system-{数据.选架构}.exe");
         var cmd = $"\"{exe}\" -machine {数据.选机器} -cpu {数据.选处理器} -m {m.容量}";
@@ -74,12 +71,13 @@ public partial class 架构 : Grid
         cmd += $" -object {(m.大页 ? "memory-backend-file" : "memory-backend-ram")},id=ram0,size={m.容量}M{(m.预分配 ? ",prealloc=on" : "")}";
         if (m.节点 > 1) for (int i = 0; i < m.节点; i++) cmd += $" -numa node,mem={m.容量 / m.节点}M,cpus={i},nodeid={i}";
         else cmd += " -machine memory-backend=ram0";
-        if (!string.IsNullOrWhiteSpace(d.路径))
+        if (!string.IsNullOrEmpty(d.路径))
         {
-            cmd += $" -drive file=\"{d.路径}\",if={d.接口.ToLower()}";
-            if (d.模式 != 2) cmd += $",format={d.格式}";
+            var driveStr = $" -drive file=\"{d.路径}\",if={d.接口.ToLower()}";
+            if (d.模式 != 2) driveStr += $",format={d.格式}";
+            cmd += driveStr;
         }
-        cmd += $" -netdev user,id=net0 -device {n.设备},netdev=net0";
+        if (!string.IsNullOrEmpty(n.设备)) cmd += $" -netdev user,id=net0 -device {n.设备},netdev=net0";
         if (m.气球) cmd += " -device virtio-balloon";
         if (m.加密) cmd += " -object sev-guest,id=sev0 -machine memory-encryption=sev0";
         return cmd;
@@ -109,6 +107,7 @@ public partial class 架构 : Grid
         }
         数据.选机器 = 数据.机器列表.FirstOrDefault(); 数据.选处理器 = 数据.处理器列表.FirstOrDefault();
         刷新UI();
+        _ = 网络.实例.刷新设备();
     }
     private static async Task<string> 运行(string f, string a)
     {

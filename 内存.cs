@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Collections.Generic;
-using System.Runtime.Versioning;
 namespace SuiQemu;
 
 public partial class 内存 : StackPanel

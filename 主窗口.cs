@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.IO;
-using System.Runtime.Versioning;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
