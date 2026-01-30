@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using System.Runtime.Versioning;
 namespace SuiQemu;
-[SupportedOSPlatform("Windows10.0.22621.0")]
 public partial class App : Application
 {
 private Window? _窗口;

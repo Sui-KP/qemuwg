@@ -9,7 +9,6 @@ using Windows.Storage.Pickers;
 using WinRT.Interop;
 namespace SuiQemu;
 
-[SupportedOSPlatform("Windows10.0.22621.0")]
 public partial class 主窗口 : Window
 {
     readonly TextBlock 显示文本;
@@ -54,5 +53,9 @@ public partial class 主窗口 : Window
         显示文本.Text = $"速仿 {版本信息}".Trim();
         功能按钮.Content = "新仿真";
     }
-    private void 执行新仿真(string 文件夹路径) => Content = new 新仿真(文件夹路径);
+    private void 执行新仿真(string 文件夹路径)
+    {
+        nint handle = WindowNative.GetWindowHandle(this);
+        Content = new 新仿真(文件夹路径, handle);
+    }
 }
