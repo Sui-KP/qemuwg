@@ -1,11 +1,12 @@
 using Microsoft.UI.Xaml;
+using Microsoft.Windows.Globalization;
 namespace SuiQemu;
-
 public partial class App : Application
 {
     private Window? _窗口;
     public App()
     {
+        ApplicationLanguages.PrimaryLanguageOverride = "zh-Hans";
         InitializeComponent();
     }
     protected override void OnLaunched(LaunchActivatedEventArgs 参数)

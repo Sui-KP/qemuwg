@@ -17,6 +17,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <MSBuildWarningsAsMessages>IDE0130</MSBuildWarningsAsMessages>
+    <DefaultLanguage>zh-Hans</DefaultLanguage>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Assets" />
