@@ -7,17 +7,17 @@ using System.Linq;
 using System.Threading.Tasks;
 namespace SuiQemu;
 
-public partial class 网络 : StackPanel
+public partial class 显示 : StackPanel
 {
-    public static 网络 实例 { get; } = new();
-    public 网络参数 配置 { get; } = new();
+    public static 显示 实例 { get; } = new();
+    public 显示参数 配置 { get; } = new();
     private readonly ComboBox _c设备;
     private readonly ProgressBar _p1;
-    public 网络()
+    public 显示()
     {
         Spacing = 15; Padding = new Thickness(20);
         _p1 = new ProgressBar { IsIndeterminate = true, Visibility = Visibility.Collapsed };
-        _c设备 = new ComboBox { Header = "网络设备", HorizontalAlignment = HorizontalAlignment.Stretch };
+        _c设备 = new ComboBox { Header = "显示设备 (VGA)", HorizontalAlignment = HorizontalAlignment.Stretch };
         _c设备.SelectionChanged += (s, e) => 配置.设备 = _c设备.SelectedValue?.ToString() ?? "";
         Children.Add(_p1);
         Children.Add(_c设备);
@@ -46,17 +46,17 @@ public partial class 网络 : StackPanel
                 {
                     string 所有文本 = 进程.StandardOutput.ReadToEnd() + 进程.StandardError.ReadToEnd();
                     进程.WaitForExit();
-                    bool 处于网络段 = false;
+                    bool 处于显示段 = false;
                     var 行集合 = 所有文本.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                     foreach (var 原始行 in 行集合)
                     {
                         var 行 = 原始行.Trim();
-                        if (行.Contains("Network devices:"))
+                        if (行.Contains("Display devices:"))
                         {
-                            处于网络段 = true;
+                            处于显示段 = true;
                             continue;
                         }
-                        if (处于网络段)
+                        if (处于显示段)
                         {
                             if (行.Contains("name \""))
                             {
@@ -69,7 +69,7 @@ public partial class 网络 : StackPanel
                             }
                             else if (!string.IsNullOrWhiteSpace(行) && !行.StartsWith(" "))
                             {
-                                if (结果.Count > 0) 处于网络段 = false;
+                                if (结果.Count > 0) 处于显示段 = false;
                             }
                         }
                     }

@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.Globalization;
 namespace SuiQemu;
+
 public partial class App : Application
 {
     private Window? _窗口;

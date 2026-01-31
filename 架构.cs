@@ -22,11 +22,13 @@ public class 磁盘参数
     public string 接口 = "Virtio";
 }
 public class 网络参数 { public string 设备 = ""; }
+public class 显示参数 { public string 设备 = ""; }
 public class 仿真配置
 {
     public 内存参数 内存 = new();
     public 磁盘参数 磁盘 = new();
     public 网络参数 网络 = new();
+    public 显示参数 显示 = new();
 }
 public class 架构数据
 {
@@ -64,7 +66,7 @@ public partial class 架构 : Grid
     public string 拼命令(仿真配置 p)
     {
         if (数据.路径 == null || 数据.选架构 == null) return "";
-        var m = p.内存; var d = p.磁盘; var n = p.网络;
+        var m = p.内存; var d = p.磁盘; var n = p.网络; var v = p.显示;
         var exe = Path.Combine(数据.路径, $"qemu-system-{数据.选架构}.exe");
         var cmd = $"\"{exe}\" -machine {数据.选机器} -cpu {数据.选处理器} -m {m.容量}";
         if (m.插槽 > 0) cmd += $",slots={m.插槽},maxmem={m.最大容量}M";
@@ -78,6 +80,7 @@ public partial class 架构 : Grid
             cmd += driveStr;
         }
         if (!string.IsNullOrEmpty(n.设备)) cmd += $" -netdev user,id=net0 -device {n.设备},netdev=net0";
+        if (!string.IsNullOrEmpty(v.设备)) cmd += $" -device {v.设备}";
         if (m.气球) cmd += " -device virtio-balloon";
         if (m.加密) cmd += " -object sev-guest,id=sev0 -machine memory-encryption=sev0";
         return cmd;
@@ -108,6 +111,7 @@ public partial class 架构 : Grid
         数据.选机器 = 数据.机器列表.FirstOrDefault(); 数据.选处理器 = 数据.处理器列表.FirstOrDefault();
         刷新UI();
         _ = 网络.实例.刷新设备();
+        _ = 显示.实例.刷新设备();
     }
     private static async Task<string> 运行(string f, string a)
     {
