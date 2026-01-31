@@ -1,11 +1,11 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 namespace SuiQemu;
-
 public partial class 网络 : StackPanel
 {
     public static 网络 实例 { get; } = new();
@@ -25,30 +25,60 @@ public partial class 网络 : StackPanel
     {
         if (string.IsNullOrEmpty(架构.实例.数据.路径) || string.IsNullOrEmpty(架构.实例.数据.选架构)) return;
         _p1.Visibility = Visibility.Visible;
-        var exe = System.IO.Path.Combine(架构.实例.数据.路径, $"qemu-system-{架构.实例.数据.选架构}.exe");
-        var list = await Task.Run(() =>
+        string 执行路径 = System.IO.Path.Combine(架构.实例.数据.路径, $"qemu-system-{架构.实例.数据.选架构}.exe");
+        var 设备列表 = await Task.Run(() =>
         {
-            var res = new List<string>();
+            var 结果 = new List<string>();
             try
             {
-                string script = $"& '{exe}' -device help 2>&1 | %{{ if($_ -match 'Network devices:'){{$s=1}} elseif($s){{ if($_ -match '^\\S'){{$s=0}} elseif($_ -match 'name \"([^\"]+)\"'){{ $Matches[1] }} }} }}";
-                var info = new ProcessStartInfo { FileName = "powershell", Arguments = $"-NoProfile -Command \"{script}\"", RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true };
-                using var p = Process.Start(info);
-                if (p != null)
+                var 启动信息 = new ProcessStartInfo
                 {
-                    while (!p.StandardOutput.EndOfStream)
+                    FileName = 执行路径,
+                    Arguments = "-device help",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using var 进程 = Process.Start(启动信息);
+                if (进程 != null)
+                {
+                    string 所有文本 = 进程.StandardOutput.ReadToEnd() + 进程.StandardError.ReadToEnd();
+                    进程.WaitForExit();
+                    bool 处于网络段 = false;
+                    var 行集合 = 所有文本.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var 原始行 in 行集合)
                     {
-                        var line = p.StandardOutput.ReadLine()?.Trim();
-                        if (!string.IsNullOrEmpty(line)) res.Add(line);
+                        var 行 = 原始行.Trim();
+                        if (行.Contains("Network devices:"))
+                        {
+                            处于网络段 = true;
+                            continue;
+                        }
+                        if (处于网络段)
+                        {
+                            if (行.Contains("name \""))
+                            {
+                                int 起始 = 行.IndexOf("name \"") + 6;
+                                int 结束 = 行.IndexOf("\"", 起始);
+                                if (起始 > 5 && 结束 > 起始)
+                                {
+                                    结果.Add(行.Substring(起始, 结束 - 起始));
+                                }
+                            }
+                            else if (!string.IsNullOrWhiteSpace(行) && !行.StartsWith(" "))
+                            {
+                                if (结果.Count > 0) 处于网络段 = false;
+                            }
+                        }
                     }
-                    p.WaitForExit();
                 }
             }
             catch { }
-            return res.Distinct().OrderBy(s => s).ToList();
+            return 结果.Distinct().OrderBy(s => s).ToList();
         });
-        _c设备.ItemsSource = list;
-        if (list.Count > 0) _c设备.SelectedIndex = 0;
+        _c设备.ItemsSource = 设备列表;
+        if (设备列表.Count > 0) _c设备.SelectedIndex = 0;
         _p1.Visibility = Visibility.Collapsed;
     }
 }
