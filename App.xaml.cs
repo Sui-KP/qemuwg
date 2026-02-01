@@ -8,7 +8,7 @@ public partial class App : Application
     private Window? _窗口;
     public App()
     {
-        ApplicationLanguages.PrimaryLanguageOverride = "zh-Hans";
+        ApplicationLanguages.PrimaryLanguageOverride = "zh-CN";
         InitializeComponent();
     }
     protected override void OnLaunched(LaunchActivatedEventArgs 参数)

@@ -14,8 +14,13 @@ public class 内存参数
 }
 public class 磁盘参数
 {
-    public int 模式;
-    public string 路径 = "", 容量 = "20G", 格式 = "qcow2", 分配 = "off", 接口 = "Virtio";
+    public int 模式 = 0;
+    public string 路径 = "";
+    public string 容量 = "20G";
+    public string 格式 = "qcow2";
+    public string 分配 = "off";
+    public string 接口 = "Virtio";
+    public int 索引 = 0;
 }
 public class 网络参数 { public string 设备 = ""; }
 public class 显示参数 { public string 设备 = ""; }
@@ -66,7 +71,8 @@ public partial class 架构 : Grid
         _架构框.SelectionChanged += async (s, e) => { if (_架构框.SelectedItem is string 选 && 选 != 数据.选架构) await 更新架构(选); };
         _机器框.SelectionChanged += (s, e) => 数据.选机器 = _机器框.SelectedItem as string;
         _处理器框.SelectionChanged += (s, e) => 数据.选处理器 = _处理器框.SelectedItem as string;
-        _加速框.SelectionChanged += (s, e) => {
+        _加速框.SelectionChanged += (s, e) =>
+        {
             数据.选加速 = _加速框.SelectedItem as string;
             _翻译块框.IsEnabled = 数据.选加速?.Contains("TCG") ?? false;
         };
@@ -104,7 +110,8 @@ public partial class 架构 : Grid
         命令行 += $" -object {(内存.大页 ? "memory-backend-file" : "memory-backend-ram")},id=ram0,size={内存.容量}M{(内存.预分配 ? ",prealloc=on" : "")}";
         if (内存.节点 > 1) for (int i = 0; i < 内存.节点; i++) 命令行 += $" -numa node,mem={内存.容量 / 内存.节点}M,cpus={i},nodeid={i}";
         else 命令行 += " -machine memory-backend=ram0";
-        if (!string.IsNullOrEmpty(磁盘.路径)) 命令行 += $" -drive file=\"{磁盘.路径}\",if={磁盘.接口.ToLower()}{(磁盘.模式 != 2 ? $",format={磁盘.格式}" : "")}";
+        if (!string.IsNullOrEmpty(磁盘.路径)) 命令行 += $" -drive file=\"{磁盘.路径}\",if={磁盘.接口.ToLower()},index=0{(磁盘.模式 != 2 ? $",format={磁盘.格式}" : "")}";
+        if (!string.IsNullOrEmpty(光盘.实例.配置.路径)) 命令行 += $" -drive file=\"{光盘.实例.配置.路径}\",media=cdrom,index=1";
         if (!string.IsNullOrEmpty(网络.设备)) 命令行 += $" -netdev user,id=net0 -device {网络.设备},netdev=net0";
         if (!string.IsNullOrEmpty(显示.设备)) 命令行 += $" -device {显示.设备}";
         if (内存.气球) 命令行 += " -device virtio-balloon";

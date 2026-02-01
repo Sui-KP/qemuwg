@@ -46,7 +46,16 @@ public partial class 主页 : Grid
     {
         if (_存储.Values["上次路径"] is not string 路径) return;
         磁盘.实例.窗口句柄 = _窗口句柄;
-        _步骤组 ??= [("架构", 架构.实例), ("内存", new 内存()), ("磁盘", 磁盘.实例), ("网络", 网络.实例), ("显示", 显示.实例), ("预览", _预览框)];
+        光盘.实例.窗口句柄 = _窗口句柄;
+        _步骤组 ??= [
+            ("架构", 架构.实例),
+            ("内存", new 内存()),
+            ("磁盘", 磁盘.实例),
+            ("光驱", 光盘.实例),
+            ("网络", 网络.实例),
+            ("显示", 显示.实例),
+            ("预览", _预览框)
+        ];
         列表视图.Visibility = Visibility.Collapsed;
         仿真视图.Visibility = Visibility.Visible;
         定位步骤页面(0);
@@ -57,9 +66,15 @@ public partial class 主页 : Grid
         _当前步骤 = 索引;
         步骤标题.Text = _步骤组![索引].标题;
         配置容器.Children.Clear();
-        if (索引 == 5)
+        if (索引 == 6)
         {
-            _预览框.Text = 架构.实例.拼命令(new() { 内存 = ((内存)_步骤组[1].视图).配置, 磁盘 = 磁盘.实例.配置, 网络 = 网络.实例.配置, 显示 = 显示.实例.配置 });
+            _预览框.Text = 架构.实例.拼命令(new()
+            {
+                内存 = ((内存)_步骤组[1].视图).配置,
+                磁盘 = 磁盘.实例.配置,
+                网络 = 网络.实例.配置,
+                显示 = 显示.实例.配置
+            });
             确认按钮.Content = "保存项目";
         }
         else 确认按钮.Content = "下一步";
@@ -68,7 +83,7 @@ public partial class 主页 : Grid
     private void 切换步骤(object s, RoutedEventArgs e) { if (s is Button b && int.TryParse(b.Tag?.ToString(), out int i)) 定位步骤页面(i); }
     private void 推进流程(object s, RoutedEventArgs e)
     {
-        if (_当前步骤 < 5) 定位步骤页面(++_当前步骤);
+        if (_当前步骤 < 6) 定位步骤页面(++_当前步骤);
         else
         {
             if (!string.IsNullOrEmpty(_预览框.Text)) { Items.Add(_预览框.Text); 保存数据(); 刷新列表数据(); }
@@ -82,8 +97,10 @@ public partial class 主页 : Grid
     {
         if (s is Button b && b.DataContext is string m)
         {
-            var x = new 详情(m);
-            x.返回回调 = () => { 详情载体.Visibility = Visibility.Collapsed; 列表视图.Visibility = Visibility.Visible; 详情载体.Children.Clear(); };
+            var x = new 详情(m)
+            {
+                返回回调 = () => { 详情载体.Visibility = Visibility.Collapsed; 列表视图.Visibility = Visibility.Visible; 详情载体.Children.Clear(); }
+            };
             列表视图.Visibility = Visibility.Collapsed;
             详情载体.Children.Clear(); 详情载体.Children.Add(x); 详情载体.Visibility = Visibility.Visible;
         }

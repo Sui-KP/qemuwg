@@ -64,12 +64,15 @@
                     <FontIcon Glyph="&#xE7C3;"/>
                 </Button>
                 <Button Width="48" Height="48" Click="切换步骤" Tag="3" Background="Transparent" BorderThickness="0">
-                    <FontIcon Glyph="&#xE12B;"/>
+                    <FontIcon Glyph="&#xE958;"/>
                 </Button>
                 <Button Width="48" Height="48" Click="切换步骤" Tag="4" Background="Transparent" BorderThickness="0">
-                    <FontIcon Glyph="&#xE7F4;"/>
+                    <FontIcon Glyph="&#xE12B;"/>
                 </Button>
                 <Button Width="48" Height="48" Click="切换步骤" Tag="5" Background="Transparent" BorderThickness="0">
+                    <FontIcon Glyph="&#xE7F4;"/>
+                </Button>
+                <Button Width="48" Height="48" Click="切换步骤" Tag="6" Background="Transparent" BorderThickness="0">
                     <FontIcon Glyph="&#xE756;"/>
                 </Button>
             </StackPanel>
