@@ -16,7 +16,7 @@ public partial class 网络 : StackPanel
     private readonly ProgressBar _p1 = new() { IsIndeterminate = true, Visibility = Visibility.Collapsed };
     public 网络()
     {
-        Spacing = 15; Padding = new Thickness(20);
+        Spacing = 15; Padding = new Thickness(9);
         _c设备.SelectionChanged += (s, e) => 配置.设备 = _c设备.SelectedValue?.ToString() ?? "";
         Children.Add(_p1);
         Children.Add(_c设备);

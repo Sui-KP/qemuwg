@@ -15,7 +15,7 @@ public partial class 显示 : StackPanel
     private readonly ProgressBar _p1;
     public 显示()
     {
-        Spacing = 15; Padding = new Thickness(20);
+        Spacing = 15; Padding = new Thickness(9);
         _p1 = new ProgressBar { IsIndeterminate = true, Visibility = Visibility.Collapsed };
         _c设备 = new ComboBox { Header = "显示设备 (VGA)", HorizontalAlignment = HorizontalAlignment.Stretch };
         _c设备.SelectionChanged += (s, e) => 配置.设备 = _c设备.SelectedValue?.ToString() ?? "";

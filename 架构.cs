@@ -23,11 +23,11 @@ public partial class 架构 : Grid
     private readonly ProgressBar _进度条;
     public 架构()
     {
-        var 容器 = new StackPanel { Spacing = 10, Padding = new Thickness(20) };
+        var 容器 = new StackPanel { Padding = new Thickness(9) };
         容器.Children.Add(_进度条 = new() { IsIndeterminate = true, Visibility = (Visibility)1 });
         容器.Children.Add(_架构框 = new() { Header = "架构", HorizontalAlignment = (HorizontalAlignment)3 });
         容器.Children.Add(_机器框 = new() { Header = "类型", HorizontalAlignment = (HorizontalAlignment)3 });
-        var 核心网格 = new Grid { ColumnSpacing = 10 };
+        var 核心网格 = new Grid();
         for (int i = 0; i < 5; i++) 核心网格.ColumnDefinitions.Add(new());
         核心网格.Children.Add(_处理器框 = new() { Header = "处理器", HorizontalAlignment = (HorizontalAlignment)3 });
         核心网格.Children.Add(_逻辑框 = new() { Header = "vCPU", HorizontalAlignment = (HorizontalAlignment)3 });
@@ -36,7 +36,7 @@ public partial class 架构 : Grid
         核心网格.Children.Add(_线程框 = new() { Header = "线程", HorizontalAlignment = (HorizontalAlignment)3 });
         for (int i = 0; i < 5; i++) Grid.SetColumn(核心网格.Children[i] as FrameworkElement, i);
         容器.Children.Add(核心网格);
-        var 加速网格 = new Grid { ColumnSpacing = 10 };
+        var 加速网格 = new Grid();
         加速网格.ColumnDefinitions.Add(new()); 加速网格.ColumnDefinitions.Add(new());
         加速网格.Children.Add(_加速框 = new() { Header = "加速", HorizontalAlignment = (HorizontalAlignment)3, ItemsSource = 数据.加速列表 });
         加速网格.Children.Add(_翻译块框 = new() { Header = "翻译块", HorizontalAlignment = (HorizontalAlignment)3 });
