@@ -28,8 +28,8 @@ public class 仿真配置
 }
 public class 架构数据
 {
-    public string? 路径, 选架构, 选机器, 选处理器, 选加速 = "自动";
-    public List<string> 架构列表 = [], 机器列表 = [], 处理器列表 = [], 加速列表 = ["自动", "强制TCG", "强制WHPX"];
+    public string? 路径, 选架构, 选机器, 选处理器, 选加速 = "自动", 翻译块大小;
+    public List<string> 架构列表 = [], 机器列表 = [], 处理器列表 = [], 加速列表 = ["自动", "TCG", "TCG(多线程)", "WHPX", "WHPX+TCG"];
     public bool 加载中;
 }
 public partial class 架构 : Grid
@@ -38,6 +38,7 @@ public partial class 架构 : Grid
     public 架构数据 数据 { get; } = new();
     private readonly Dictionary<string, (List<string>, List<string>)> _缓存 = [];
     private readonly ComboBox _架构框, _机器框, _处理器框, _加速框;
+    private readonly TextBox _翻译块框;
     private readonly ProgressBar _进度条;
     public 架构()
     {
@@ -45,18 +46,25 @@ public partial class 架构 : Grid
         容器.Children.Add(_进度条 = new() { IsIndeterminate = true, Visibility = (Visibility)1 });
         容器.Children.Add(_架构框 = new() { Header = "架构", HorizontalAlignment = (HorizontalAlignment)3 });
         容器.Children.Add(_机器框 = new() { Header = "类型", HorizontalAlignment = (HorizontalAlignment)3 });
-        var 处理器网格 = new Grid { ColumnSpacing = 10 };
-        处理器网格.ColumnDefinitions.Add(new());
-        处理器网格.ColumnDefinitions.Add(new());
-        处理器网格.Children.Add(_处理器框 = new() { Header = "处理器", HorizontalAlignment = (HorizontalAlignment)3 });
-        处理器网格.Children.Add(_加速框 = new() { Header = "加速", HorizontalAlignment = (HorizontalAlignment)3, ItemsSource = 数据.加速列表 });
+        var 硬件网格 = new Grid { ColumnSpacing = 10 };
+        硬件网格.ColumnDefinitions.Add(new());
+        硬件网格.ColumnDefinitions.Add(new());
+        硬件网格.ColumnDefinitions.Add(new());
+        硬件网格.Children.Add(_处理器框 = new() { Header = "处理器", HorizontalAlignment = (HorizontalAlignment)3 });
+        硬件网格.Children.Add(_加速框 = new() { Header = "加速", HorizontalAlignment = (HorizontalAlignment)3, ItemsSource = 数据.加速列表 });
+        硬件网格.Children.Add(_翻译块框 = new() { Header = "翻译块", HorizontalAlignment = (HorizontalAlignment)3 });
         Grid.SetColumn(_加速框, 1);
+        Grid.SetColumn(_翻译块框, 2);
         _加速框.SelectedIndex = 0;
-        容器.Children.Add(处理器网格);
+        容器.Children.Add(硬件网格);
         _架构框.SelectionChanged += async (s, e) => { if (_架构框.SelectedItem is string 选 && 选 != 数据.选架构) await 更新架构(选); };
         _机器框.SelectionChanged += (s, e) => 数据.选机器 = _机器框.SelectedItem as string;
         _处理器框.SelectionChanged += (s, e) => 数据.选处理器 = _处理器框.SelectedItem as string;
-        _加速框.SelectionChanged += (s, e) => 数据.选加速 = _加速框.SelectedItem as string;
+        _加速框.SelectionChanged += (s, e) => {
+            数据.选加速 = _加速框.SelectedItem as string;
+            _翻译块框.IsEnabled = 数据.选加速 != null && 数据.选加速.Contains("TCG");
+        };
+        _翻译块框.TextChanged += (s, e) => 数据.翻译块大小 = _翻译块框.Text;
         Children.Add(容器);
     }
     public string 拼命令(仿真配置 配置)
@@ -64,7 +72,17 @@ public partial class 架构 : Grid
         if (数据.路径 is not string 根路径 || 数据.选架构 is not string 架构名) return "";
         var (内存, 磁盘, 网络, 显示) = (配置.内存, 配置.磁盘, 配置.网络, 配置.显示);
         var 核心命令 = $"\"{Path.Combine(根路径, $"qemu-system-{架构名}.exe")}\" -machine {数据.选机器} -cpu {数据.选处理器} -m {内存.容量}";
-        if (数据.选加速 is string 加速 && 加速 != "自动") 核心命令 += $" -accel {加速[2..].ToLower()}";
+        if (数据.选加速 is string 模式 && 模式 != "自动")
+        {
+            if (模式 == "WHPX+TCG") 核心命令 += " -accel whpx -accel tcg";
+            else if (模式 == "WHPX") 核心命令 += " -accel whpx";
+            else if (模式.StartsWith("TCG"))
+            {
+                var 附加 = 模式.Contains("多线程") ? ",thread=multi" : "";
+                if (!string.IsNullOrWhiteSpace(数据.翻译块大小)) 附加 += $",tb-size={数据.翻译块大小}";
+                核心命令 += $" -accel tcg{附加}";
+            }
+        }
         if (内存.插槽 > 0) 核心命令 += $",slots={内存.插槽},maxmem={内存.最大容量}M";
         核心命令 += $" -object {(内存.大页 ? "memory-backend-file" : "memory-backend-ram")},id=ram0,size={内存.容量}M{(内存.预分配 ? ",prealloc=on" : "")}";
         if (内存.节点 > 1) for (int i = 0; i < 内存.节点; i++) 核心命令 += $" -numa node,mem={内存.容量 / 内存.节点}M,cpus={i},nodeid={i}";
