@@ -34,15 +34,20 @@ public partial class 网络 : StackPanel
                 var psi = new ProcessStartInfo(exe, "-device help") { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true };
                 using var p = Process.Start(psi);
                 string outText = p?.StandardOutput.ReadToEnd() ?? "";
-                var match = Regex.Match(outText, @"Network devices:(.*?)\r?\n\r?\n", RegexOptions.Singleline);
+                var match = MyRegex().Match(outText);
                 string section = match.Success ? match.Groups[1].Value : outText;
-                return Regex.Matches(section, @"name ""([^""]+)""")
+                return [.. MyRegex1().Matches(section)
                     .Select(m => m.Groups[1].Value)
-                    .Distinct().OrderBy(s => s).ToList();
+                    .Distinct().OrderBy(s => s)];
             }
             catch { return new List<string>(); }
         });
         if (_c设备.Items.Count > 0) _c设备.SelectedIndex = 0;
         _p1.Visibility = Visibility.Collapsed;
     }
+
+    [GeneratedRegex(@"Network devices:(.*?)\r?\n\r?\n", RegexOptions.Singleline)]
+    private static partial Regex MyRegex();
+    [GeneratedRegex(@"name ""([^""]+)""")]
+    private static partial Regex MyRegex1();
 }

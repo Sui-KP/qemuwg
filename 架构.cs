@@ -9,17 +9,13 @@ namespace SuiQemu;
 
 public class 内存参数
 {
-    public int 容量 = 2048, 插槽 = 0, 最大容量 = 4096, 节点 = 1;
-    public bool 预分配 = false, 气球 = false, 加密 = false, 大页 = false;
+    public int 容量 = 2048, 插槽, 最大容量 = 4096, 节点 = 1;
+    public bool 预分配, 气球, 加密, 大页;
 }
 public class 磁盘参数
 {
-    public int 模式 = 0;
-    public string 路径 = "";
-    public string 容量 = "20G";
-    public string 格式 = "qcow2";
-    public string 分配 = "off";
-    public string 接口 = "Virtio";
+    public int 模式;
+    public string 路径 = "", 容量 = "20G", 格式 = "qcow2", 分配 = "off", 接口 = "Virtio";
 }
 public class 网络参数 { public string 设备 = ""; }
 public class 显示参数 { public string 设备 = ""; }
@@ -32,9 +28,8 @@ public class 仿真配置
 }
 public class 架构数据
 {
-    public string? 路径;
-    public List<string> 架构列表 = [], 机器列表 = [], 处理器列表 = [];
-    public string? 选架构, 选机器, 选处理器;
+    public string? 路径, 选架构, 选机器, 选处理器, 选加速 = "自动";
+    public List<string> 架构列表 = [], 机器列表 = [], 处理器列表 = [], 加速列表 = ["自动", "强制TCG", "强制WHPX"];
     public bool 加载中;
 }
 public partial class 架构 : Grid
@@ -42,87 +37,84 @@ public partial class 架构 : Grid
     public static 架构 实例 { get; } = new();
     public 架构数据 数据 { get; } = new();
     private readonly Dictionary<string, (List<string>, List<string>)> _缓存 = [];
-    private readonly ComboBox _c1, _c2, _c3;
-    private readonly ProgressBar _p1;
+    private readonly ComboBox _架构框, _机器框, _处理器框, _加速框;
+    private readonly ProgressBar _进度条;
     public 架构()
     {
-        var vsp = new StackPanel { Spacing = 10, Padding = new Thickness(20) };
-        vsp.Children.Add(_p1 = new ProgressBar { IsIndeterminate = true, Visibility = Visibility.Collapsed });
-        vsp.Children.Add(_c1 = new ComboBox { Header = "架构系统", HorizontalAlignment = HorizontalAlignment.Stretch });
-        vsp.Children.Add(_c2 = new ComboBox { Header = "机器类型", HorizontalAlignment = HorizontalAlignment.Stretch });
-        vsp.Children.Add(_c3 = new ComboBox { Header = "处理器型号", HorizontalAlignment = HorizontalAlignment.Stretch });
-        _c1.SelectionChanged += async (s, e) => { if (_c1.SelectedItem is string v && v != 数据.选架构) await 更新架构(v); };
-        _c2.SelectionChanged += (s, e) => 数据.选机器 = _c2.SelectedItem as string;
-        _c3.SelectionChanged += (s, e) => 数据.选处理器 = _c3.SelectedItem as string;
-        Children.Add(vsp);
+        var 容器 = new StackPanel { Spacing = 10, Padding = new Thickness(20) };
+        容器.Children.Add(_进度条 = new() { IsIndeterminate = true, Visibility = (Visibility)1 });
+        容器.Children.Add(_架构框 = new() { Header = "架构", HorizontalAlignment = (HorizontalAlignment)3 });
+        容器.Children.Add(_机器框 = new() { Header = "类型", HorizontalAlignment = (HorizontalAlignment)3 });
+        var 处理器网格 = new Grid { ColumnSpacing = 10 };
+        处理器网格.ColumnDefinitions.Add(new());
+        处理器网格.ColumnDefinitions.Add(new());
+        处理器网格.Children.Add(_处理器框 = new() { Header = "处理器", HorizontalAlignment = (HorizontalAlignment)3 });
+        处理器网格.Children.Add(_加速框 = new() { Header = "加速", HorizontalAlignment = (HorizontalAlignment)3, ItemsSource = 数据.加速列表 });
+        Grid.SetColumn(_加速框, 1);
+        _加速框.SelectedIndex = 0;
+        容器.Children.Add(处理器网格);
+        _架构框.SelectionChanged += async (s, e) => { if (_架构框.SelectedItem is string 选 && 选 != 数据.选架构) await 更新架构(选); };
+        _机器框.SelectionChanged += (s, e) => 数据.选机器 = _机器框.SelectedItem as string;
+        _处理器框.SelectionChanged += (s, e) => 数据.选处理器 = _处理器框.SelectedItem as string;
+        _加速框.SelectionChanged += (s, e) => 数据.选加速 = _加速框.SelectedItem as string;
+        Children.Add(容器);
     }
-    public void 刷新UI()
+    public string 拼命令(仿真配置 配置)
     {
-        _p1.Visibility = 数据.加载中 ? Visibility.Visible : Visibility.Collapsed;
-        绑定(_c1, 数据.架构列表, 数据.选架构);
-        绑定(_c2, 数据.机器列表, 数据.选机器);
-        绑定(_c3, 数据.处理器列表, 数据.选处理器);
+        if (数据.路径 is not string 根路径 || 数据.选架构 is not string 架构名) return "";
+        var (内存, 磁盘, 网络, 显示) = (配置.内存, 配置.磁盘, 配置.网络, 配置.显示);
+        var 核心命令 = $"\"{Path.Combine(根路径, $"qemu-system-{架构名}.exe")}\" -machine {数据.选机器} -cpu {数据.选处理器} -m {内存.容量}";
+        if (数据.选加速 is string 加速 && 加速 != "自动") 核心命令 += $" -accel {加速[2..].ToLower()}";
+        if (内存.插槽 > 0) 核心命令 += $",slots={内存.插槽},maxmem={内存.最大容量}M";
+        核心命令 += $" -object {(内存.大页 ? "memory-backend-file" : "memory-backend-ram")},id=ram0,size={内存.容量}M{(内存.预分配 ? ",prealloc=on" : "")}";
+        if (内存.节点 > 1) for (int i = 0; i < 内存.节点; i++) 核心命令 += $" -numa node,mem={内存.容量 / 内存.节点}M,cpus={i},nodeid={i}";
+        else 核心命令 += " -machine memory-backend=ram0";
+        if (!string.IsNullOrEmpty(磁盘.路径)) 核心命令 += $" -drive file=\"{磁盘.路径}\",if={磁盘.接口.ToLower()}{(磁盘.模式 != 2 ? $",format={磁盘.格式}" : "")}";
+        if (!string.IsNullOrEmpty(网络.设备)) 核心命令 += $" -netdev user,id=net0 -device {网络.设备},netdev=net0";
+        if (!string.IsNullOrEmpty(显示.设备)) 核心命令 += $" -device {显示.设备}";
+        if (内存.气球) 核心命令 += " -device virtio-balloon";
+        if (内存.加密) 核心命令 += " -object sev-guest,id=sev0 -machine memory-encryption=sev0";
+        return 核心命令;
     }
-    public string 拼命令(仿真配置 p)
+    public async Task 更新架构(string 架构名)
     {
-        if (数据.路径 == null || 数据.选架构 == null) return "";
-        var m = p.内存; var d = p.磁盘; var n = p.网络; var v = p.显示;
-        var exe = Path.Combine(数据.路径, $"qemu-system-{数据.选架构}.exe");
-        var cmd = $"\"{exe}\" -machine {数据.选机器} -cpu {数据.选处理器} -m {m.容量}";
-        if (m.插槽 > 0) cmd += $",slots={m.插槽},maxmem={m.最大容量}M";
-        cmd += $" -object {(m.大页 ? "memory-backend-file" : "memory-backend-ram")},id=ram0,size={m.容量}M{(m.预分配 ? ",prealloc=on" : "")}";
-        if (m.节点 > 1) for (int i = 0; i < m.节点; i++) cmd += $" -numa node,mem={m.容量 / m.节点}M,cpus={i},nodeid={i}";
-        else cmd += " -machine memory-backend=ram0";
-        if (!string.IsNullOrEmpty(d.路径))
+        数据.选架构 = 架构名;
+        if (!_缓存.TryGetValue(架构名, out var 列表缓存))
         {
-            var driveStr = $" -drive file=\"{d.路径}\",if={d.接口.ToLower()}";
-            if (d.模式 != 2) driveStr += $",format={d.格式}";
-            cmd += driveStr;
+            数据.加载中 = true; 刷新UI();
+            var 路径 = Path.Combine(数据.路径!, $"qemu-system-{架构名}.exe");
+            var 结果 = await Task.WhenAll(运行(路径, "-machine help"), 运行(路径, "-cpu help"));
+            _缓存[架构名] = 列表缓存 = (解析(结果[0]), 解析(结果[1])); 数据.加载中 = false;
         }
-        if (!string.IsNullOrEmpty(n.设备)) cmd += $" -netdev user,id=net0 -device {n.设备},netdev=net0";
-        if (!string.IsNullOrEmpty(v.设备)) cmd += $" -device {v.设备}";
-        if (m.气球) cmd += " -device virtio-balloon";
-        if (m.加密) cmd += " -object sev-guest,id=sev0 -machine memory-encryption=sev0";
-        return cmd;
+        (数据.机器列表, 数据.处理器列表) = 列表缓存;
+        (数据.选机器, 数据.选处理器) = (列表缓存.Item1.FirstOrDefault(), 列表缓存.Item2.FirstOrDefault());
+        刷新UI();
+        _ = 网络.实例.刷新设备(); _ = 显示.实例.刷新设备();
     }
-    public async Task 扫描路径(string p)
+    private static async Task<string> 运行(string 程序, string 参数)
     {
-        数据.路径 = p; 数据.加载中 = true; 刷新UI();
-        var d = new DirectoryInfo(p);
-        if (d.Exists)
+        try { using var 进程 = Process.Start(new ProcessStartInfo(程序, 参数) { RedirectStandardOutput = true, CreateNoWindow = true }); return 进程 is null ? "" : await 进程.StandardOutput.ReadToEndAsync(); }
+        catch { return ""; }
+    }
+    public async Task 扫描路径(string 根路径)
+    {
+        数据.路径 = 根路径; 数据.加载中 = true; 刷新UI();
+        if (new DirectoryInfo(根路径) is { Exists: true } 目录)
         {
-            数据.架构列表 = [.. d.GetFiles("qemu-system-*.exe").Where(f => !f.Name.EndsWith("w.exe")).Select(f => f.Name[12..^4]).OrderBy(n => n)];
+            数据.架构列表 = [.. 目录.GetFiles("qemu-system-*.exe").Where(f => !f.Name.EndsWith("w.exe")).Select(f => f.Name[12..^4]).OrderBy(n => n)];
             if (数据.架构列表.Count > 0) await 更新架构(数据.架构列表[0]);
         }
         数据.加载中 = false; 刷新UI();
     }
-    public async Task 更新架构(string n)
+    public void 刷新UI()
     {
-        数据.选架构 = n;
-        if (_缓存.TryGetValue(n, out var d)) (数据.机器列表, 数据.处理器列表) = d;
-        else
-        {
-            数据.加载中 = true; 刷新UI();
-            var exe = Path.Combine(数据.路径!, $"qemu-system-{n}.exe");
-            var res = await Task.WhenAll(运行(exe, "-machine help"), 运行(exe, "-cpu help"));
-            数据.机器列表 = 解析(res[0]); 数据.处理器列表 = 解析(res[1]);
-            _缓存[n] = (数据.机器列表, 数据.处理器列表); 数据.加载中 = false;
-        }
-        数据.选机器 = 数据.机器列表.FirstOrDefault(); 数据.选处理器 = 数据.处理器列表.FirstOrDefault();
-        刷新UI();
-        _ = 网络.实例.刷新设备();
-        _ = 显示.实例.刷新设备();
+        _进度条.Visibility = (Visibility)(数据.加载中 ? 0 : 1);
+        绑定(_架构框, 数据.架构列表, 数据.选架构); 绑定(_机器框, 数据.机器列表, 数据.选机器); 绑定(_处理器框, 数据.处理器列表, 数据.选处理器);
     }
-    private static async Task<string> 运行(string f, string a)
+    private static List<string> 解析(string 输出) => [.. 输出.Split('\n').Skip(1).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim().Split(' ')[0]).Distinct().OrderBy(s => s)];
+    private static void 绑定(ComboBox 下拉框, List<string> 数据源, string? 选中值)
     {
-        try { using var p = Process.Start(new ProcessStartInfo(f, a) { RedirectStandardOutput = true, CreateNoWindow = true }); return p == null ? "" : await p.StandardOutput.ReadToEndAsync(); }
-        catch { return ""; }
-    }
-    private static List<string> 解析(string c) => [.. c.Split('\n').Skip(1).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim().Split(' ')[0]).Distinct().OrderBy(s => s)];
-    private static void 绑定(ComboBox c, List<string> d, string? v)
-    {
-        if (c.ItemsSource != d) { c.ItemsSource = null; c.ItemsSource = d; }
-        if (v != null && d.Contains(v)) c.SelectedItem = v;
-        else if (d.Count > 0) c.SelectedIndex = 0;
+        if (下拉框.ItemsSource != 数据源) 下拉框.ItemsSource = 数据源;
+        下拉框.SelectedItem = (选中值 != null && 数据源.Contains(选中值)) ? 选中值 : (数据源.Count > 0 ? 数据源[0] : null);
     }
 }
